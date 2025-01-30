@@ -31,8 +31,8 @@ end
 --- get buffer and location of current selection
 ---@return ak.Selection
 M.ui.get_selection = function()
-  local vstart = vim.fn.getpos("'<")
-  local vend = vim.fn.getpos("'>")
+  local vstart = vim.fn.getcharpos("'<")
+  local vend = vim.fn.getcharpos("'>")
 
   -- return actual line numbers not indices
   return {
