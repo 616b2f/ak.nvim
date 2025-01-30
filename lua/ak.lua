@@ -31,8 +31,8 @@ end
 --- get buffer and location of current selection
 ---@return ak.Selection
 M.ui.get_selection = function()
-  local vstart = vim.fn.getcharpos("'<")
-  local vend = vim.fn.getcharpos("'>")
+  local vstart = vim.fn.getpos("'<")
+  local vend = vim.fn.getpos("'>")
 
   -- return actual line numbers not indices
   return {
@@ -49,16 +49,13 @@ end
 M.ui.replace_selection = function(str)
   local s = M.ui.get_selection()
 
-  print("pre mutate replace with: " .. vim.inspect(str))
   if type(str) == "string" then
     if string.match(str, '\\n') then
-      print(vim.inspect(str))
       str = vim.split(str, '\n', {plain=true})
     else
       str = { str }
     end
   end
-  print("replace with: " .. vim.inspect(str))
 
   vim.api.nvim_buf_set_text(s.buf, s.start_line-1, s.start_col-1, s.end_line-1, s.end_col, str)
 end
@@ -67,8 +64,8 @@ M.url = {}
 
 M.url.encode = function(str)
   if type(str) ~= "number" then
-    str = str.gsub(str, "\r?\n", "\r\n")
-    str = str.gsub(str, "([^%w%-%.%_%~ ])", function(c)
+    str = str:gsub("\r?\n", "\r\n")
+    str = str:gsub("([^%w%-%.%_%~ ])", function(c)
       return string.format("%%%02X", c:byte())
     end)
     str = str:gsub(" ", "+")
@@ -118,7 +115,10 @@ end
 ---@param str string
 ---@return string?
 M.base64url.decode = function (str)
-  return vim.fn.system("basenc --decode --base64url -w0", str)
+  local s = vim.fn.system("basenc --ignore-garbage --decode --base64url -w0", str)
+  -- TODO: find an better solution to this
+  s = s:gsub("basenc: invalid input\n", "")
+  return s
 end
 
 M.ui.base64url = {}
@@ -156,10 +156,42 @@ M.ui.jwt.decode = function(command_args)
   local jwt = table.concat(lines)
   local parts = vim.split(jwt, '.', {plain=true})
   local jsons = {}
+
   table.insert(jsons, M.base64url.decode(parts[1]))
   table.insert(jsons, M.base64url.decode(parts[2]))
   table.insert(jsons, parts[3])
   M.ui.replace_selection(jsons)
+end
+
+
+M.fs = {}
+
+--- Find the root directory based on an indicating pattern
+M.fs.find_root_dir = function(source, indicator_pattern)
+  local fn_match_file = function (filename)
+    local match = string.match(filename, indicator_pattern)
+    if match then
+      return true
+    end
+    return false
+  end
+  local path;
+  local matches = vim.fs.find(fn_match_file, {
+    path = source,
+    upward = true,
+    type = "directory"
+  })
+  if matches and #matches > 0 then
+    path = vim.fn.fnamemodify(matches[1], ":p:h:h")
+  end
+
+  return path
+end
+
+-- Find git directory for current file
+M.fs.get_git_dir = function ()
+  local git_path = M.fs.find_root_dir(vim.fn.expand('%:p:h'), ".git")
+  return git_path
 end
 
 return M
