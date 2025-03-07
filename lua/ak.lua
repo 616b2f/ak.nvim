@@ -50,7 +50,7 @@ M.ui.replace_selection = function(str)
   local s = M.ui.get_selection()
 
   if type(str) == "string" then
-    if string.match(str, '\\n') then
+    if string.match(str, '\n') then
       str = vim.split(str, '\n', {plain=true})
     else
       str = { str }
