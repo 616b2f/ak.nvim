@@ -60,28 +60,20 @@ M.ui.replace_selection = function(str)
   vim.api.nvim_buf_set_text(s.buf, s.start_line-1, s.start_col-1, s.end_line-1, s.end_col, str)
 end
 
-M.url = {}
-
-M.url.encode = function(str)
-  if type(str) ~= "number" then
-    str = str:gsub("\r?\n", "\r\n")
-    str = str:gsub("([^%w%-%.%_%~ ])", function(c)
-      return string.format("%%%02X", c:byte())
-    end)
-    str = str:gsub(" ", "+")
-    return str
-  else
-    return str
-  end
-end
-
 M.ui.url = {}
 
 M.ui.url.encode = function ()
   local text = M.ui.get_selected_text()
   local flattened = table.concat(text, "\n")
-  local encoded = M.url.encode(flattened)
+  local encoded = vim.uri_encode(flattened)
   M.ui.replace_selection(encoded)
+end
+
+M.ui.url.decode = function ()
+  local text = M.ui.get_selected_text()
+  local flattened = table.concat(text, "\n")
+  local decoded = vim.uri_decode(flattened)
+  M.ui.replace_selection(decoded)
 end
 
 M.ui.base64 = {}
